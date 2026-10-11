@@ -1,91 +1,206 @@
-# Azure Cloud Drive Project
+# Web Drive — Backend
 
-This repository contains the architecture, source code, and deployment configurations for a scalable, secure cloud storage application (similar to Google Drive or OneDrive) built entirely on Microsoft Azure.
+The backend for a cloud storage web app (in the spirit of Google Drive / OneDrive), built with **.NET 10** on **Azure**.
 
-## 🏗️ Architecture & Infrastructure
-
-The application leverages a modern, serverless-first architecture on Azure to ensure high availability, global distribution, and cost efficiency.
-
-* **Frontend:** **Azure Static Web Apps (SWA)** hosting a Single Page Application (React/Vue/Angular) with global CDN distribution.
-* **Identity & Security:** **Microsoft Entra ID B2C** for user registration, social logins (Google, GitHub), and API security.
-* **Compute / Backend:** **Azure Container Apps (ACA)** (for containerized microservices) or **Azure Functions** (for event-driven, serverless tasks).
-* **File Storage:** **Azure Blob Storage** utilizing hot/cool access tiers for cost-effective, unstructured data storage.
-* **Metadata Database:** **Azure Cosmos DB (NoSQL API)** for blazing-fast directory navigation and file tracking.
-* **API Gateway:** **Azure API Management (APIM)** for rate limiting, caching, and unified routing.
+This repository contains the backend only. The frontend (Azure Static Web Apps) lives in a separate repository and talks to this API over HTTPS.
 
 ---
 
-## 🗄️ Data & Storage Implementation
+## Status
 
-This project uses the **Valet Key Pattern** to handle file transfers efficiently without bottlenecking the backend compute resources.
+The project is being built bottom-up: pure domain code first, Azure integrations last.
 
-### The Upload/Download Flow
-1. The frontend requests an upload/download URL from the API.
-2. The backend generates a time-limited **Shared Access Signature (SAS) token** for Azure Blob Storage.
-3. The client uploads or downloads the file *directly* to/from Blob Storage using the SAS URL.
+| # | Step | Status |
+|---|------|--------|
+| 0 | Repo foundation: solution, build settings, central package management, SDK pinning | Done |
+| 1 | SharedKernel: `Result`/`Error`, `Entity`, `AggregateRoot`, strongly typed IDs, domain events | Done |
+| 2 | SharedKernel: messaging contracts (commands, queries, integration events) | Next |
+| 3 | SharedKernel: abstractions (`ICurrentUser`) | Planned |
+| 4 | SharedKernel unit tests | Planned |
+| 5 | Files module: domain model (`DriveItem`, `Drive`, `ItemName`) | Planned |
+| 6 | Files module: application use cases (create folder, list, upload, download, ...) | Planned |
+| 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Planned |
+| 8 | Azure Functions host: HTTP endpoints, authentication middleware | Planned |
+| 9 | Sharing and Users modules, background jobs, Bicep infrastructure, CI/CD | Planned |
 
-### Cosmos DB Schema
-File and folder metadata is stored in Cosmos DB to represent the virtual directory structure.
+---
 
-**File Document Example:**
+## Architecture
+
+### Style: modular monolith
+
+One deployable (an Azure Functions app) built from independent **modules**. Each module owns its domain, use cases and data, and other modules can only reach it through its public `*.Contracts` project. This keeps the simplicity of a single deployment while preserving clear boundaries; a module can be split into its own service later if it ever needs to be.
+
+| Module | Responsibility |
+|--------|----------------|
+| **Files** | Drives, folders, files, uploads/downloads, trash, storage quota |
+| **Sharing** | Sharing items with users, public share links, permission checks |
+| **Users** | User profiles, first-sign-in provisioning, user lookup |
+
+### Azure services
+
+| Concern | Service |
+|---------|---------|
+| Compute | **Azure Functions** (.NET 10 isolated worker, Flex Consumption) — HTTP API, event triggers, timers, Durable Functions |
+| File contents | **Azure Blob Storage** |
+| Metadata | **Azure Cosmos DB** (NoSQL API) |
+| Identity | **Microsoft Entra External ID** (JWT bearer tokens) |
+| Events | **Azure Event Grid** (blob created, malware scan results) |
+| Malware scanning | **Microsoft Defender for Storage** |
+| Secrets & identity | **Managed Identity** + **Azure Key Vault** |
+| Monitoring | **Application Insights** |
+| Later | **API Management** (rate limiting), **Azure AI Search** (full-text search) |
+
+### Request flow
+
+```
+Browser (SWA) ──JWT──► Azure Functions (HTTP) ──► Module handlers ──► Cosmos DB (metadata)
+      │                                                    │
+      │                                                    └──► issues short-lived SAS URLs
+      │
+      └──────── uploads / downloads file bytes directly ────────► Blob Storage
+```
+
+File bytes never pass through the API (the *valet key* pattern). The API only authorizes the request and hands out a short-lived SAS URL.
+
+---
+
+## Solution structure
+
+```
+web-drive-backend/
+├─ web-drive-backend.slnx
+├─ global.json                     # pins the .NET 10 SDK line
+├─ Directory.Build.props           # shared build settings for every project
+├─ Directory.Packages.props        # central NuGet package versions
+├─ .editorconfig
+├─ src/
+│  ├─ BuildingBlocks/
+│  │  ├─ Drive.SharedKernel/                    # Result/Error, Entity, AggregateRoot, IDs (no dependencies)
+│  │  └─ Drive.BuildingBlocks.Infrastructure/   # planned: Cosmos/Blob setup, in-process event bus
+│  ├─ Modules/                                  # planned
+│  │  ├─ Files/    (Drive.Modules.Files,    Drive.Modules.Files.Contracts)
+│  │  ├─ Sharing/  (Drive.Modules.Sharing,  Drive.Modules.Sharing.Contracts)
+│  │  └─ Users/    (Drive.Modules.Users,    Drive.Modules.Users.Contracts)
+│  └─ Host/
+│     └─ Drive.Functions/                       # planned: the only deployable
+└─ tests/                                       # planned
+   ├─ Drive.SharedKernel.UnitTests/
+   ├─ Drive.Modules.*.UnitTests/
+   ├─ Drive.IntegrationTests/                   # Cosmos emulator + Azurite via Testcontainers
+   └─ Drive.ArchitectureTests/                  # enforces the dependency rules below
+```
+
+Inside each module, code is organised as `Domain/`, `Application/` (one folder per use case: command/query, handler, validator) and `Infrastructure/`. Implementation types are `internal`; only `*.Contracts` and the module's `AddXxxModule()` registration method are public.
+
+### Dependency rules
+
+```
+Drive.Functions      → module implementations, BuildingBlocks
+Module (impl)        → its own .Contracts, other modules' .Contracts only, BuildingBlocks
+Module .Contracts    → SharedKernel only
+SharedKernel         → nothing
+```
+
+These rules are enforced by architecture tests, not just convention.
+
+---
+
+## Key design decisions
+
+### Uploads (valet key pattern)
+
+1. `POST /uploads` — the API checks permissions, the file name and the quota, **reserves** the quota, creates the item as `PendingUpload` and returns a write-only SAS URL.
+2. The browser uploads directly to Blob Storage in blocks (resumable for large files).
+3. `POST /uploads/{id}/complete` — the API verifies the blob, commits the quota and marks the item `Available`.
+4. A blob-created Event Grid trigger completes the upload as a fallback; a timer cleans up uploads abandoned for over 24 hours.
+
+### Data model (Cosmos DB)
+
+| Container | Partition key | Contents |
+|-----------|---------------|----------|
+| `items` | `/driveId` | One `Drive` document (quota) plus every file and folder in that drive |
+| `shares` | `/granteeId` | Share grants ("shared with me" is a single-partition query) |
+| `shareLinks` | `/id` | Public link tokens (stored as hashes) |
+| `users` | `/id` | User profiles |
+
+- Items store only `parentId`, so moving a folder of any size is a single-document update.
+- Blobs are named `{driveId}/{itemId}/{versionId}` — renames and moves never touch Blob Storage.
+- A unique key on `nameKey` (`{parentId}/{lowercased name}`) guarantees unique names per folder.
+- The drive's quota lives in the same partition as its items, so creating a file and updating used storage happen in one transactional batch.
+- Every write uses the document's ETag for optimistic concurrency.
+
+Example item document:
+
 ```json
-{ 
-  "id": "uuid", 
-  "userId": "user123", 
-  "type": "file", 
-  "name": "report.pdf", 
-  "parentId": "folder456", 
-  "size": 1024, 
-  "blobUrl": "..." 
+{
+  "id": "0199c1e2-...",
+  "driveId": "0199a0b4-...",
+  "parentId": "0199a0b4-...",
+  "kind": "File",
+  "name": "report.pdf",
+  "nameKey": "0199a0b4-.../report.pdf",
+  "status": "Available",
+  "size": 1048576,
+  "contentType": "application/pdf",
+  "blobName": "0199a0b4-.../0199c1e2-.../v1",
+  "createdAt": "2026-10-11T09:30:00+00:00",
+  "createdBy": "3f2a..."
 }
 ```
 
-**Folder Document Example:**
-```json
-{ 
-  "id": "folder456", 
-  "userId": "user123", 
-  "type": "folder", 
-  "name": "Work Documents", 
-  "parentId": "root" 
-}
+### Code conventions
+
+- **Expected failures are values, not exceptions.** Handlers return `Result` / `Result<T>` with a typed `Error` (`Validation`, `NotFound`, `Conflict`, `Forbidden`, `Failure`) that the host maps to HTTP status codes and ProblemDetails. Exceptions are reserved for bugs and infrastructure failures.
+- **Strongly typed IDs** (`UserId`, `ItemId`, `DriveId`, ...) instead of raw `Guid`s, so mixing up IDs is a compile error.
+- **Entities compare by identity**; aggregates record domain events and carry a concurrency token.
+- **No MediatR** — small in-house handler interfaces instead.
+- **Time comes from `TimeProvider`** so tests can control it.
+
+---
+
+## Planned API (v1)
+
+| Method | Route | Description |
+|--------|-------|-------------|
+| `GET` | `/me` | Current user (provisions the profile and drive on first sign-in) |
+| `GET` | `/items/{id}/children` | List a folder's contents (paged) |
+| `GET` | `/items/{id}/breadcrumbs` | Path from the drive root to the item |
+| `POST` | `/folders` | Create a folder |
+| `PATCH` | `/items/{id}` | Rename an item |
+| `POST` | `/items/{id}/move` | Move an item to another folder |
+| `DELETE` | `/items/{id}` | Move an item to the trash |
+| `POST` | `/items/{id}/restore` | Restore an item from the trash |
+| `POST` | `/uploads` | Start an upload; returns a write-only SAS URL |
+| `POST` | `/uploads/{id}/complete` | Confirm an upload |
+| `GET` | `/items/{id}/download-url` | Get a read-only SAS URL |
+| `POST` | `/items/{id}/shares` | Share an item with a user |
+| `POST` | `/items/{id}/links` | Create a public share link |
+| `GET` | `/s/{token}` | Resolve a public share link (anonymous) |
+
+---
+
+## Getting started
+
+### Prerequisites
+
+- [.NET 10 SDK](https://dotnet.microsoft.com/download)
+- Visual Studio 2026, or VS Code with the C# Dev Kit
+- Later steps: Azure Functions Core Tools, Docker (for Azurite and the Cosmos DB emulator)
+
+### Build
+
+```bash
+dotnet build
 ```
 
----
-
-## 🔌 Backend API 
-
-The API layer acts as the orchestrator between the frontend, Cosmos DB, and Blob Storage. All requests require a valid JWT token issued by Entra ID B2C, from which the `userId` is extracted for authorization.
-
-### Core Endpoints
-
-| Method | Endpoint | Description |
-| :--- | :--- | :--- |
-| `GET` | `/api/folders/{id}` | List the contents of a specific folder |
-| `POST` | `/api/files/upload-url` | Generate a write-only SAS token for direct-to-blob upload |
-| `POST` | `/api/files` | Record metadata in Cosmos DB after successful blob upload |
-| `GET` | `/api/files/{id}/download-url` | Generate a read-only SAS token for downloading a file |
-| `DELETE`| `/api/files/{id}` | Delete metadata from Cosmos DB and trigger blob deletion |
+The build treats warnings as errors and runs the recommended .NET analyzers, so a clean build means zero warnings.
 
 ---
 
-## 💻 Frontend UI
+## Contributing conventions
 
-The user interface is designed to replicate a native operating system drive experience within the browser.
-
-* **Authentication:** Managed via **MSAL.js** to handle token acquisition and silent refreshes with Entra ID B2C.
-* **Components:**
-  * Interactive file/folder grid and list views.
-  * Drag-and-drop upload zones.
-  * Real-time progress bars monitoring direct-to-blob chunked uploads.
-  * Context menus (right-click) for renaming, deleting, and downloading assets.
-
----
-
-## 🚀 Roadmap & Advanced Features
-
-Future phases of this project will introduce enterprise-grade storage features:
-
-* **Secure File Sharing:** Generate long-lived SAS tokens or internal routing links to share files publicly or with specific Entra ID users.
-* **Intelligent Search:** Integration with **Azure AI Search** to index Cosmos DB metadata and perform deep-text extraction on blobs (PDFs, Word docs) for full-text search capabilities.
-* **Event-Driven Workflows:** Utilizing **Azure Event Grid** to listen for new blob uploads and trigger Azure Functions for automated tasks (e.g., generating image thumbnails, scanning for malware).
+- **Build settings** go in `Directory.Build.props`, never in individual `.csproj` files.
+- **Package versions** go in `Directory.Packages.props`; projects reference packages without a version.
+- **Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org/): `feat(files): add CreateFolder use case`, `fix(sharing): ...`, `chore: ...`.
+- **New projects** are created with `dotnet new ... -o <path>` (or *Add → New Project* in Visual Studio) so each project gets its own folder.
