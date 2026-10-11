@@ -1,0 +1,12 @@
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\bin\Debug\net9.0\Drive.SharedKernel.deps.json
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\bin\Debug\net9.0\Drive.SharedKernel.dll
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\bin\Debug\net9.0\Drive.SharedKernel.pdb
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.AssemblyInfoInputs.cache
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.AssemblyInfo.cs
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.csproj.CoreCompileInputs.cache
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.sourcelink.json
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.dll
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\refint\Drive.SharedKernel.dll
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\Drive.SharedKernel.pdb
+C:\Users\harun\source\repos\web-drive-backend\SharedKernel\obj\Debug\net9.0\ref\Drive.SharedKernel.dll
