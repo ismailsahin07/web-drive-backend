@@ -1,1 +1,10 @@
-﻿<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+﻿<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+	</PropertyGroup>
+
+	<ItemGroup>
+	</ItemGroup>
+
+</Project>

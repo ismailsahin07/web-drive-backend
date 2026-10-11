@@ -5,7 +5,13 @@
   </PropertyGroup>
 
 	<ItemGroup>
-		<InternalsVisibleTo Include="Drive.SharedKernel.UnitTests"/>
+		<InternalsVisibleTo Include="Drive.SharedKernel.UnitTests" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Domain\" />
+	  <Folder Include="Messaging\" />
+	  <Folder Include="Abstractions\" />
 	</ItemGroup>
 
 </Project>

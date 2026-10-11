@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Drive.SharedKernel")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+203de5edb59cd7d1293e04368cc0b394b901a442")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+04313d5f48f0a23c15419a5fd31f5b905db6dfbc")]
 [assembly: System.Reflection.AssemblyProductAttribute("Drive.SharedKernel")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Drive.SharedKernel")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
