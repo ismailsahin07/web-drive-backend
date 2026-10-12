@@ -16,8 +16,8 @@ The project is being built bottom-up: pure domain code first, Azure integrations
 | 1 | SharedKernel: `Result`/`Error`, `Entity`, `AggregateRoot`, strongly typed IDs, domain events | Done |
 | 2 | SharedKernel: messaging contracts (commands, queries, integration events) | Done |
 | 3 | SharedKernel: abstractions (`ICurrentUser`) | Done |
-| 4 | SharedKernel unit tests | Next |
-| 5 | Files module: domain model (`DriveItem`, `Drive`, `ItemName`) | Planned |
+| 4 | SharedKernel unit tests (xUnit v3 + Shouldly) | Done |
+| 5 | Files module: domain model (`DriveItem`, `Drive`, `ItemName`) | Next |
 | 6 | Files module: application use cases (create folder, list, upload, download, ...) | Planned |
 | 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Planned |
 | 8 | Azure Functions host: HTTP endpoints, authentication middleware | Planned |
@@ -70,7 +70,7 @@ File bytes never pass through the API (the *valet key* pattern). The API only au
 ```
 web-drive-backend/
 ├─ web-drive-backend.slnx
-├─ global.json                     # pins the .NET 10 SDK line
+├─ global.json                     # pins the .NET 10 SDK line and the test runner
 ├─ Directory.Build.props           # shared build settings for every project
 ├─ Directory.Packages.props        # central NuGet package versions
 ├─ .editorconfig
@@ -84,11 +84,11 @@ web-drive-backend/
 │  │  └─ Users/    (Drive.Modules.Users,    Drive.Modules.Users.Contracts)
 │  └─ Host/
 │     └─ Drive.Functions/                       # planned: the only deployable
-└─ tests/                                       # planned
-   ├─ Drive.SharedKernel.UnitTests/
-   ├─ Drive.Modules.*.UnitTests/
-   ├─ Drive.IntegrationTests/                   # Cosmos emulator + Azurite via Testcontainers
-   └─ Drive.ArchitectureTests/                  # enforces the dependency rules below
+└─ tests/
+   ├─ Drive.SharedKernel.UnitTests/             # Result/Error, UserId, Entity, AggregateRoot
+   ├─ Drive.Modules.*.UnitTests/                # planned
+   ├─ Drive.IntegrationTests/                   # planned: Cosmos emulator + Azurite via Testcontainers
+   └─ Drive.ArchitectureTests/                  # planned: enforces the dependency rules below
 ```
 
 Inside each module, code is organised as `Domain/`, `Application/` (one folder per use case: command/query, handler, validator) and `Infrastructure/`. Implementation types are `internal`; only `*.Contracts` and the module's `AddXxxModule()` registration method are public.
@@ -196,6 +196,16 @@ dotnet build
 
 The build treats warnings as errors and runs the recommended .NET analyzers, so a clean build means zero warnings.
 
+### Test
+
+```bash
+dotnet test
+```
+
+Or use **Test Explorer** in Visual Studio (*Test → Test Explorer → Run All*).
+
+Tests use **xUnit v3** on the **Microsoft Testing Platform**: each test project is a small executable, so it needs only the `xunit.v3` package (no `Microsoft.NET.Test.Sdk` or `xunit.runner.visualstudio`). The `"test"` section in `global.json` tells `dotnet test` on the .NET 10 SDK to use it.
+
 ---
 
 ## Contributing conventions
@@ -204,3 +214,13 @@ The build treats warnings as errors and runs the recommended .NET analyzers, so 
 - **Package versions** go in `Directory.Packages.props`; projects reference packages without a version.
 - **Commit messages** follow [Conventional Commits](https://www.conventionalcommits.org/): `feat(files): add CreateFolder use case`, `fix(sharing): ...`, `chore: ...`.
 - **New projects** are created with `dotnet new ... -o <path>` (or *Add → New Project* in Visual Studio) so each project gets its own folder.
+
+### Testing conventions
+
+- **One test project per production project**, named `<Project>.UnitTests`, under `tests/`. The production project grants it access to `internal` types with `<InternalsVisibleTo>`.
+- **Test names** follow `Method_Scenario_ExpectedResult`, e.g. `Failure_WithNullError_Throws`.
+- **Arrange / Act / Assert**, separated by blank lines; one behaviour per test.
+- **Assertions** use [Shouldly](https://docs.shouldly.org/) (`result.Value.ShouldBe(42)`).
+- **No real clocks or randomness** in assertions: use fixed dates (and `FakeTimeProvider` once handlers take a `TimeProvider`).
+- **Test doubles** (small concrete subclasses and fakes) live in a `TestDoubles/` folder and are `internal`.
+- A few analyzer rules that do not fit test code (CA1707, CA1515, CA1861) are relaxed for `tests/**` only, in `.editorconfig`.
