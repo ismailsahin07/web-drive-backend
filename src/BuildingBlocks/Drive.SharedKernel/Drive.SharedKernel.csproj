@@ -9,8 +9,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Domain\" />
-	  <Folder Include="Messaging\" />
 	  <Folder Include="Abstractions\" />
 	</ItemGroup>
 
