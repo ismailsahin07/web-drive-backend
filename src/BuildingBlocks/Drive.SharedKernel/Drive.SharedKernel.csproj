@@ -8,8 +8,4 @@
 		<InternalsVisibleTo Include="Drive.SharedKernel.UnitTests" />
 	</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Abstractions\" />
-	</ItemGroup>
-
 </Project>

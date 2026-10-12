@@ -14,9 +14,9 @@ The project is being built bottom-up: pure domain code first, Azure integrations
 |---|------|--------|
 | 0 | Repo foundation: solution, build settings, central package management, SDK pinning | Done |
 | 1 | SharedKernel: `Result`/`Error`, `Entity`, `AggregateRoot`, strongly typed IDs, domain events | Done |
-| 2 | SharedKernel: messaging contracts (commands, queries, integration events) | Next |
-| 3 | SharedKernel: abstractions (`ICurrentUser`) | Planned |
-| 4 | SharedKernel unit tests | Planned |
+| 2 | SharedKernel: messaging contracts (commands, queries, integration events) | Done |
+| 3 | SharedKernel: abstractions (`ICurrentUser`) | Done |
+| 4 | SharedKernel unit tests | Next |
 | 5 | Files module: domain model (`DriveItem`, `Drive`, `ItemName`) | Planned |
 | 6 | Files module: application use cases (create folder, list, upload, download, ...) | Planned |
 | 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Planned |
