@@ -65,3 +65,11 @@ dotnet_style_operator_placement_when_wrapping = beginning_of_line
 tab_width = 4
 indent_size = 4
 end_of_line = crlf
+
+[tests/**/*.cs]
+# Test names use underscores: Method_Scenario_ExpectedResult.
+dotnet_diagnostic.CA1707.severity = none
+# xUnit needs public test classes, even though test projects are executables.
+dotnet_diagnostic.CA1515.severity = none
+# Inline arrays in test data are fine; tests are not hot paths.
+dotnet_diagnostic.CA1861.severity = none
