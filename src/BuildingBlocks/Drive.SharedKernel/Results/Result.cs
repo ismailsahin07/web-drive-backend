@@ -22,9 +22,9 @@ namespace Drive.SharedKernel.Results
         }
         public static Result<TValue> Success<TValue>(TValue value)
         {
-            if(value is null)
+            if (value is null)
             {
-                throw new ArgumentNullException(nameof(value), "A successfull result must have a value. Return an error instead of null.");
+                throw new ArgumentNullException(nameof(value), "A successful result must have a value. Return an error instead of null.");
             }
 
             return new Result<TValue>(value, error: null);
