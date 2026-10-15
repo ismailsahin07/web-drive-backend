@@ -1,0 +1,12 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Drive.Modules.Files.UnitTests" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\BuildingBlocks\Drive.SharedKernel\Drive.SharedKernel.csproj" />
+		<ProjectReference Include="..\Drive.Modules.Files.Contracts\Drive.Modules.Files.Contracts.csproj" />
+	</ItemGroup>
+
+</Project>

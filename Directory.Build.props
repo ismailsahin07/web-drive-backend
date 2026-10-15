@@ -8,6 +8,8 @@
 		<TreatWarningsAsErrors>true</TreatWarningsAsErrors>
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
 		<EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+
+		<IsPackable>false</IsPackable>
 	</PropertyGroup>
 
 </Project>
