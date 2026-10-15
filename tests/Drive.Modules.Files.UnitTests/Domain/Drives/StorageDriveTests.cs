@@ -39,11 +39,11 @@ namespace Drive.Modules.Files.UnitTests.Domain.Drives
         }
 
         [Fact]
-        public void Restore_RestoresAllState()
+        public void Rehydrate_RestoresAllState()
         {
             var id = DriveId.New();
 
-            var drive = StorageDrive.Restore(id, UserId.From(Guid.NewGuid()), ItemId.New(), Quota, usedBytes: 40, reservedBytes: 10, Now);
+            var drive = StorageDrive.Rehydrate(id, UserId.From(Guid.NewGuid()), ItemId.New(), Quota, usedBytes: 40, reservedBytes: 10, Now);
 
             drive.Id.ShouldBe(id);
             drive.UsedBytes.ShouldBe(40);

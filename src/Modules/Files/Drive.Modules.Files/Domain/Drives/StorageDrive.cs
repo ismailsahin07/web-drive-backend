@@ -50,7 +50,7 @@ namespace Drive.Modules.Files.Domain.Drives
             return new StorageDrive(id, ownerId, rootFolderId, quotaBytes, usedBytes: 0, reservedBytes: 0, createdAt: now);
         }
 
-        public static StorageDrive Restore(
+        public static StorageDrive Rehydrate(
             DriveId id,
             UserId ownerId,
             ItemId rootFolderId,
