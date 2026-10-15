@@ -10,7 +10,13 @@
   <Folder Name="/src/BuildingBlocks/">
     <Project Path="src/BuildingBlocks/Drive.SharedKernel/Drive.SharedKernel.csproj" />
   </Folder>
+  <Folder Name="/src/Modules/" />
+  <Folder Name="/src/Modules/Files/">
+    <Project Path="src/Modules/Files/Drive.Modules.Files.Contracts/Drive.Modules.Files.Contracts.csproj" />
+    <Project Path="src/Modules/Files/Drive.Modules.Files/Drive.Modules.Files.csproj" />
+  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Drive.SharedKernel.UnitTests/Drive.SharedKernel.UnitTests.csproj" />
+    <Project Path="tests/Drive.Modules.Files.UnitTests/Drive.Modules.Files.UnitTests.csproj" />
   </Folder>
 </Solution>
