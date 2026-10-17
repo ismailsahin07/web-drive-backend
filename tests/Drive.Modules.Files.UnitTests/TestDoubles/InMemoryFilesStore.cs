@@ -19,6 +19,8 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
 
         public Error? NextSaveError { get; set; }
 
+        public Action? OnSave { get; set; }
+
         public IReadOnlyCollection<DriveItem> Items => _items.Values;
 
         public void Seed(StorageDrive drive) => _drives[drive.Id] = drive;
@@ -79,6 +81,8 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
 
         public Task<Result> SaveChangesAsync(CancellationToken cancellationToken)
         {
+            OnSave?.Invoke();
+
             if (NextSaveError is { } error)
             {
                 NextSaveError = null;

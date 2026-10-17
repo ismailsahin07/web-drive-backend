@@ -18,8 +18,8 @@ The project is being built bottom-up: pure domain code first, Azure integrations
 | 3 | SharedKernel: abstractions (`ICurrentUser`) | Done |
 | 4 | SharedKernel unit tests (xUnit v3 + Shouldly) | Done |
 | 5 | Files module: domain model (`ItemName`, `StorageDrive`, `DriveItem`) | Done |
-| 6 | Files module: application use cases (create folder, list, upload, download, ...) | Next |
-| 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Planned |
+| 6 | Files module: application use cases (folders, uploads/downloads, rename/move/trash/restore, listings, drive provisioning) | Done |
+| 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Next |
 | 8 | Azure Functions host: HTTP endpoints, authentication middleware | Planned |
 | 9 | Sharing and Users modules, background jobs, Bicep infrastructure, CI/CD | Planned |
 
@@ -79,14 +79,14 @@ web-drive-backend/
 │  │  ├─ Drive.SharedKernel/                    # Result/Error, Entity, AggregateRoot, IDs (no dependencies)
 │  │  └─ Drive.BuildingBlocks.Infrastructure/   # planned: Cosmos/Blob setup, in-process event bus
 │  ├─ Modules/
-│  │  ├─ Files/    (Drive.Modules.Files,    Drive.Modules.Files.Contracts)   # domain model done
+│  │  ├─ Files/    (Drive.Modules.Files,    Drive.Modules.Files.Contracts)   # domain + application done
 │  │  ├─ Sharing/  (Drive.Modules.Sharing,  Drive.Modules.Sharing.Contracts) # planned
 │  │  └─ Users/    (Drive.Modules.Users,    Drive.Modules.Users.Contracts)   # planned
 │  └─ Host/
 │     └─ Drive.Functions/                       # planned: the only deployable
 └─ tests/
    ├─ Drive.SharedKernel.UnitTests/             # Result/Error, UserId, Entity, AggregateRoot
-   ├─ Drive.Modules.Files.UnitTests/            # ItemName, StorageDrive, DriveItem
+   ├─ Drive.Modules.Files.UnitTests/            # domain, handlers (in-memory fakes), DI registration
    ├─ Drive.Modules.*.UnitTests/                # planned for Sharing and Users
    ├─ Drive.IntegrationTests/                   # planned: Cosmos emulator + Azurite via Testcontainers
    └─ Drive.ArchitectureTests/                  # planned: enforces the dependency rules below

@@ -1,4 +1,5 @@
 ﻿using Drive.Modules.Files.Application.Access;
+using Drive.Modules.Files.Application.Drives;
 using Drive.Modules.Files.Application.Items;
 using Drive.Modules.Files.Application.Storage;
 using Drive.Modules.Files.Contracts;
@@ -17,7 +18,7 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
             Owner = UserId.From(Guid.NewGuid());
             CurrentUser = new FakeCurrentUser(Owner);
 
-            var driveId = DriveId.New();
+            var driveId = PersonalDrives.IdFor(Owner);
             var rootId = ItemId.New();
             Drive = StorageDrive.Create(driveId, Owner, rootId, quotaBytes: 1_000, Now);
             Root = DriveItem.CreateRootFolder(rootId, driveId, Owner, Now);
