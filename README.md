@@ -17,8 +17,8 @@ The project is being built bottom-up: pure domain code first, Azure integrations
 | 2 | SharedKernel: messaging contracts (commands, queries, integration events) | Done |
 | 3 | SharedKernel: abstractions (`ICurrentUser`) | Done |
 | 4 | SharedKernel unit tests (xUnit v3 + Shouldly) | Done |
-| 5 | Files module: domain model (`DriveItem`, `Drive`, `ItemName`) | Next |
-| 6 | Files module: application use cases (create folder, list, upload, download, ...) | Planned |
+| 5 | Files module: domain model (`ItemName`, `StorageDrive`, `DriveItem`) | Done |
+| 6 | Files module: application use cases (create folder, list, upload, download, ...) | Next |
 | 7 | Infrastructure: Cosmos DB + Blob Storage, tested against local emulators | Planned |
 | 8 | Azure Functions host: HTTP endpoints, authentication middleware | Planned |
 | 9 | Sharing and Users modules, background jobs, Bicep infrastructure, CI/CD | Planned |
@@ -78,15 +78,16 @@ web-drive-backend/
 │  ├─ BuildingBlocks/
 │  │  ├─ Drive.SharedKernel/                    # Result/Error, Entity, AggregateRoot, IDs (no dependencies)
 │  │  └─ Drive.BuildingBlocks.Infrastructure/   # planned: Cosmos/Blob setup, in-process event bus
-│  ├─ Modules/                                  # planned
-│  │  ├─ Files/    (Drive.Modules.Files,    Drive.Modules.Files.Contracts)
-│  │  ├─ Sharing/  (Drive.Modules.Sharing,  Drive.Modules.Sharing.Contracts)
-│  │  └─ Users/    (Drive.Modules.Users,    Drive.Modules.Users.Contracts)
+│  ├─ Modules/
+│  │  ├─ Files/    (Drive.Modules.Files,    Drive.Modules.Files.Contracts)   # domain model done
+│  │  ├─ Sharing/  (Drive.Modules.Sharing,  Drive.Modules.Sharing.Contracts) # planned
+│  │  └─ Users/    (Drive.Modules.Users,    Drive.Modules.Users.Contracts)   # planned
 │  └─ Host/
 │     └─ Drive.Functions/                       # planned: the only deployable
 └─ tests/
    ├─ Drive.SharedKernel.UnitTests/             # Result/Error, UserId, Entity, AggregateRoot
-   ├─ Drive.Modules.*.UnitTests/                # planned
+   ├─ Drive.Modules.Files.UnitTests/            # ItemName, StorageDrive, DriveItem
+   ├─ Drive.Modules.*.UnitTests/                # planned for Sharing and Users
    ├─ Drive.IntegrationTests/                   # planned: Cosmos emulator + Azurite via Testcontainers
    └─ Drive.ArchitectureTests/                  # planned: enforces the dependency rules below
 ```
@@ -126,7 +127,7 @@ These rules are enforced by architecture tests, not just convention.
 
 - Items store only `parentId`, so moving a folder of any size is a single-document update.
 - Blobs are named `{driveId}/{itemId}/{versionId}` — renames and moves never touch Blob Storage.
-- A unique key on `nameKey` (`{parentId}/{lowercased name}`) guarantees unique names per folder.
+- A unique key on `nameKey` (`{parentId}/{uppercased, Unicode-normalized name}`) guarantees case-insensitive unique names per folder.
 - The drive's quota lives in the same partition as its items, so creating a file and updating used storage happen in one transactional batch.
 - Every write uses the document's ETag for optimistic concurrency.
 
@@ -139,7 +140,7 @@ Example item document:
   "parentId": "0199a0b4-...",
   "kind": "File",
   "name": "report.pdf",
-  "nameKey": "0199a0b4-.../report.pdf",
+  "nameKey": "0199a0b4-.../REPORT.PDF",
   "status": "Available",
   "size": 1048576,
   "contentType": "application/pdf",

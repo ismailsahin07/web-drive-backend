@@ -1,6 +1,8 @@
 [*.cs]
 dotnet_diagnostic.CA1716.severity = none
 dotnet_code_quality.CA1711.allowed_suffixes = EventHandler
+dotnet_diagnostic.CA2007.severity = none
+dotnet_diagnostic.CA1812.severity = none
 csharp_using_directive_placement = outside_namespace:silent
 csharp_prefer_simple_using_statement = true:suggestion
 csharp_prefer_braces = true:silent
