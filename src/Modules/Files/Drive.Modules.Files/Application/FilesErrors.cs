@@ -16,6 +16,10 @@ namespace Drive.Modules.Files.Application
             "Files.NotAFile",
             "The item is a folder, not a file.");
 
+        public static readonly Error NotAFolder = Error.Validation(
+            "Files.NotAFolder",
+            "The item is a file, not a folder.");
+
         public static readonly Error NameTaken = Error.Conflict(
             "Files.NameTaken",
             "An item with this name already exists in this folder.");

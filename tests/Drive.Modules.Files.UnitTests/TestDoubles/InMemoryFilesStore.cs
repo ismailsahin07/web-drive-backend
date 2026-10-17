@@ -1,7 +1,9 @@
-﻿using Drive.Modules.Files.Application.Abstractions;
+﻿using System.Globalization;
+using Drive.Modules.Files.Application.Abstractions;
 using Drive.Modules.Files.Contracts;
 using Drive.Modules.Files.Domain.Drives;
 using Drive.Modules.Files.Domain.Items;
+using Drive.SharedKernel.Paging;
 using Drive.SharedKernel.Results;
 
 namespace Drive.Modules.Files.UnitTests.TestDoubles
@@ -37,6 +39,36 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
                 && item.Status != ItemStatus.Trashed
                 && item.Name.ComparisonKey == name.ComparisonKey));
 
+        public Task<PagedResult<DriveItem>> ListChildrenAsync(
+            DriveId driveId,
+            ItemId folderId,
+            int pageSize,
+            string? continuationToken,
+            CancellationToken cancellationToken)
+        {
+            var children = _items.Values
+                .Where(item => item.DriveId == driveId && item.ParentId == folderId && item.Status == ItemStatus.Available)
+                .OrderBy(item => item.Kind)
+                .ThenBy(item => item.Name.ComparisonKey, StringComparer.Ordinal)
+                .ThenBy(item => item.Id.Value);
+
+            return Task.FromResult(Page(children, pageSize, continuationToken));
+        }
+
+        public Task<PagedResult<DriveItem>> ListTrashAsync(
+            DriveId driveId,
+            int pageSize,
+            string? continuationToken,
+            CancellationToken cancellationToken)
+        {
+            var trashed = _items.Values
+                .Where(item => item.DriveId == driveId && item.Status == ItemStatus.Trashed)
+                .OrderByDescending(item => item.TrashedAt)
+                .ThenBy(item => item.Id.Value);
+
+            return Task.FromResult(Page(trashed, pageSize, continuationToken));
+        }
+
         public void Add(StorageDrive drive) => _pendingDrives.Add(drive);
 
         public void Update(StorageDrive drive) => _pendingDrives.Add(drive);
@@ -69,6 +101,16 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
             _pendingItems.Clear();
             SaveCount++;
             return Task.FromResult(Result.Success());
+        }
+
+        private static PagedResult<DriveItem> Page(IEnumerable<DriveItem> ordered, int pageSize, string? continuationToken)
+        {
+            var all = ordered.ToList();
+            var offset = continuationToken is null ? 0 : int.Parse(continuationToken, CultureInfo.InvariantCulture);
+            var pageItems = all.Skip(offset).Take(pageSize).ToList();
+            var nextOffset = offset + pageItems.Count;
+            var nextToken = nextOffset < all.Count ? nextOffset.ToString(CultureInfo.InvariantCulture) : null;
+            return new PagedResult<DriveItem>(pageItems, nextToken);
         }
     }
 }
