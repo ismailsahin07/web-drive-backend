@@ -1,5 +1,6 @@
 ﻿using Drive.Modules.Files.Application.Access;
 using Drive.Modules.Files.Application.Items;
+using Drive.Modules.Files.Application.Storage;
 using Drive.Modules.Files.Contracts;
 using Drive.Modules.Files.Domain.Drives;
 using Drive.Modules.Files.Domain.Items;
@@ -33,6 +34,15 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
 
         public FixedTimeProvider Time { get; } = new(Now);
 
+        public FakeBlobStorage Blobs { get; } = new();
+
+        public FilesOptions Options { get; } = new()
+        {
+            MaxFileSizeBytes = 800,
+            UploadUrlLifetime = TimeSpan.FromHours(1),
+            DownloadUrlLifetime = TimeSpan.FromMinutes(10),
+        };
+
         public StorageDrive Drive { get; }
 
         public DriveItem Root { get; }
@@ -56,6 +66,25 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
             var file = DriveItem.CreatePendingFile(
                 ItemId.New(), parent, ItemName.Create(name).Value, 10, "application/octet-stream", "blob", Owner, Now).Value;
             Store.Seed(file);
+            return file;
+        }
+
+        public DriveItem SeedUpload(DriveItem parent, string name, long sizeBytes)
+        {
+            var id = ItemId.New();
+            Drive.ReserveSpace(sizeBytes);
+            var file = DriveItem.CreatePendingFile(
+                id, parent, ItemName.Create(name).Value, sizeBytes, "text/plain", BlobNames.ForNewFile(Drive.Id, id), Owner, Now).Value;
+            Store.Seed(file);
+            return file;
+        }
+
+        public DriveItem SeedAvailableFile(DriveItem parent, string name, long sizeBytes)
+        {
+            var file = SeedUpload(parent, name, sizeBytes);
+            file.MarkUploaded(sizeBytes, Now);
+            Drive.CommitReservation(sizeBytes);
+            file.PullDomainEvents();
             return file;
         }
     }
