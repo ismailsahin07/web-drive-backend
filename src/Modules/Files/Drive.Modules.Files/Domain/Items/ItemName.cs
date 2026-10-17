@@ -1,5 +1,6 @@
 ﻿using System.Buffers;
 using System.Collections.Frozen;
+using System.Globalization;
 using System.Text;
 using Drive.SharedKernel.Results;
 
@@ -65,6 +66,39 @@ namespace Drive.Modules.Files.Domain.Items
             }
 
             return new ItemName(name);
+        }
+
+        public ItemName WithNumberSuffix(int number)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(number);
+
+            var suffix = " (" + number.ToString(CultureInfo.InvariantCulture) + ")";
+
+            var extensionStart = Value.LastIndexOf('.');
+            var stem = extensionStart > 0 ? Value[..extensionStart] : Value;
+            var extension = extensionStart > 0 ? Value[extensionStart..] : string.Empty;
+
+            var maxStemLength = MaxLength - suffix.Length - extension.Length;
+            if (maxStemLength < 1)
+            {
+                stem = Value;
+                extension = string.Empty;
+                maxStemLength = MaxLength - suffix.Length;
+            }
+
+            if (stem.Length > maxStemLength)
+            {
+                stem = stem[..maxStemLength];
+                if (char.IsHighSurrogate(stem[^1]))
+                {
+                    stem = stem[..^1];
+                }
+            }
+
+            var result = Create(stem + suffix + extension);
+            return result.IsSuccess
+                ? result.Value
+                : throw new InvalidOperationException($"Could not build a numbered name from '{Value}': {result.Error}");
         }
 
         public override string ToString() => Value;

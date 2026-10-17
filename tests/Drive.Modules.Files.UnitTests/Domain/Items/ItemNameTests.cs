@@ -131,5 +131,38 @@ namespace Drive.Modules.Files.UnitTests.Domain.Items
 
             upper.ShouldNotBe(lower);
         }
+
+        [Theory]
+        [InlineData("report.pdf", 1, "report (1).pdf")]
+        [InlineData("Work", 2, "Work (2)")]
+        [InlineData(".gitignore", 1, ".gitignore (1)")]
+        [InlineData("archive.tar.gz", 3, "archive.tar (3).gz")]
+        public void WithNumberSuffix_InsertsNumberBeforeExtension(string value, int number, string expected)
+        {
+            var name = ItemName.Create(value).Value;
+
+            name.WithNumberSuffix(number).Value.ShouldBe(expected);
+        }
+
+        [Fact]
+        public void WithNumberSuffix_OnMaxLengthName_TruncatesButKeepsExtension()
+        {
+            var name = ItemName.Create(new string('a', ItemName.MaxLength - 4) + ".pdf").Value;
+
+            var numbered = name.WithNumberSuffix(1);
+
+            numbered.Value.Length.ShouldBe(ItemName.MaxLength);
+            numbered.Value.ShouldEndWith(" (1).pdf");
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public void WithNumberSuffix_NonPositiveNumber_Throws(int number)
+        {
+            var name = ItemName.Create("report.pdf").Value;
+
+            Should.Throw<ArgumentOutOfRangeException>(() => name.WithNumberSuffix(number));
+        }
     }
 }

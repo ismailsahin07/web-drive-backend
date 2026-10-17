@@ -51,6 +51,8 @@ namespace Drive.Modules.Files.UnitTests.TestDoubles
 
         public ItemTree ItemTree => new(Store);
 
+        public AvailableNameFinder NameFinder => new(Store);
+
         public void ActAsSomeoneElse() => CurrentUser = new FakeCurrentUser(UserId.From(Guid.NewGuid()));
 
         public DriveItem SeedFolder(DriveItem parent, string name)
