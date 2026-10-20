@@ -132,6 +132,14 @@ namespace Drive.Modules.Files.UnitTests.Domain.Items
             upper.ShouldNotBe(lower);
         }
 
+        [Fact]
+        public void Rehydrate_KeepsStoredValueWithoutRevalidating()
+        {
+            var name = ItemName.Rehydrate("CON");
+
+            name.Value.ShouldBe("CON");
+        }
+
         [Theory]
         [InlineData("report.pdf", 1, "report (1).pdf")]
         [InlineData("Work", 2, "Work (2)")]

@@ -1,4 +1,6 @@
-﻿using Drive.Modules.Files.Application.Access;
+﻿using Drive.BuildingBlocks.Infrastructure.Cosmos;
+using Drive.Modules.Files.Application.Abstractions;
+using Drive.Modules.Files.Application.Access;
 using Drive.Modules.Files.Application.Downloads.GetDownloadUrl;
 using Drive.Modules.Files.Application.Drives;
 using Drive.Modules.Files.Application.Drives.GetOrCreateMyDrive;
@@ -15,8 +17,10 @@ using Drive.Modules.Files.Application.Items.TrashItem;
 using Drive.Modules.Files.Application.Uploads.CompleteUpload;
 using Drive.Modules.Files.Application.Uploads.InitiateUpload;
 using Drive.Modules.Files.Contracts;
+using Drive.Modules.Files.Infrastructure.Persistence;
 using Drive.SharedKernel.Messaging;
 using Drive.SharedKernel.Paging;
+using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -62,6 +66,27 @@ namespace Drive.Modules.Files
             services.AddScoped<IQueryHandler<ListChildrenQuery, PagedResult<DriveItemDto>>, ListChildrenHandler>();
             services.AddScoped<IQueryHandler<ListTrashQuery, PagedResult<DriveItemDto>>, ListTrashHandler>();
             services.AddScoped<IQueryHandler<GetBreadcrumbsQuery, IReadOnlyList<BreadcrumbDto>>, GetBreadcrumbsHandler>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddFilesInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        {
+            ArgumentNullException.ThrowIfNull(services);
+            ArgumentNullException.ThrowIfNull(configuration);
+
+            services.AddCosmos(configuration);
+
+            services.AddScoped(provider =>
+            {
+                var client = provider.GetRequiredService<CosmosClient>();
+                var cosmosOptions = provider.GetRequiredService<IOptions<CosmosOptions>>().Value;
+                return new CosmosFilesStore(client.GetContainer(cosmosOptions.DatabaseName, FilesCosmosSchema.ContainerName));
+            });
+
+            services.AddScoped<IStorageDriveRepository>(provider => provider.GetRequiredService<CosmosFilesStore>());
+            services.AddScoped<IDriveItemRepository>(provider => provider.GetRequiredService<CosmosFilesStore>());
+            services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<CosmosFilesStore>());
 
             return services;
         }

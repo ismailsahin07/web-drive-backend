@@ -68,6 +68,12 @@ namespace Drive.Modules.Files.Domain.Items
             return new ItemName(name);
         }
 
+        public static ItemName Rehydrate(string value)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(value);
+            return new ItemName(value);
+        }
+
         public ItemName WithNumberSuffix(int number)
         {
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(number);

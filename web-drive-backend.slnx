@@ -8,6 +8,7 @@
   </Folder>
   <Folder Name="/src/" />
   <Folder Name="/src/BuildingBlocks/">
+    <Project Path="src/BuildingBlocks/Drive.BuildingBlocks.Infrastructure/Drive.BuildingBlocks.Infrastructure.csproj" />
     <Project Path="src/BuildingBlocks/Drive.SharedKernel/Drive.SharedKernel.csproj" />
   </Folder>
   <Folder Name="/src/Modules/" />

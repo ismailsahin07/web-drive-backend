@@ -10,6 +10,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\..\BuildingBlocks\Drive.BuildingBlocks.Infrastructure\Drive.BuildingBlocks.Infrastructure.csproj" />
 		<ProjectReference Include="..\..\..\BuildingBlocks\Drive.SharedKernel\Drive.SharedKernel.csproj" />
 		<ProjectReference Include="..\Drive.Modules.Files.Contracts\Drive.Modules.Files.Contracts.csproj" />
 	</ItemGroup>
